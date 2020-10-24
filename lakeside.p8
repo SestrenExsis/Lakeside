@@ -20,6 +20,11 @@ _layers={
 	{22,0, 4,16,0,0,0.8}
 }
 
+_anims={
+	idle={1},
+	walk={0,1,2,1}
+}
+
 function person:new(
 	x, -- x position : number
 	y  -- y position : number
@@ -27,7 +32,12 @@ function person:new(
 	local obj={
 		x=x,
 		y=y,
-		an=0,
+		dx=0,
+		dy=0,
+		lx=x,
+		ly=y,
+		ann="walk",
+		ant=0,
 		fc=6
 	}
 	return setmetatable(
@@ -36,15 +46,33 @@ function person:new(
 end
 
 function person:update()
-	if t()%0.25==0 then
-		self.an=(self.an+1)%4
+	self.lx=self.x
+	self.ly=self.y
+	self.x+=self.dx
+	if self.x<0 then
+		self.x+=128*32
+	elseif self.x>=128*32 then
+		self.x-=128*32
 	end
+	if self.dx<0 then
+		self.f=4
+	elseif self.dx>0 then
+		self.f=6
+	end
+	self.y+=self.dy
+	if t()%0.25==0 then
+		self.ant=(self.ant+1)%4
+	end
+	self.x+=self.dx
+	self.y+=self.dy
 end
 
 function person:draw()
+	local an=_anims[self.ann]
+	local ani=an[1+self.ant]
 	local fx=self.f==4
 	spr(
-		self.an,60,self.y-16,1,2,fx
+		ani,60,self.y-16,1,2,fx
 		)
 end
 
@@ -55,17 +83,11 @@ end
 
 function _update()
 	if btn(⬅️) then
-		_p.x-=1.5
-		if _p.x<0 then
-			_p.x+=128*32
-		end
-		_p.f=4
+		_p.dx=-0.75
 	elseif btn(➡️) then
-		_p.x+=1.5
-		if _p.x>=128*32 then
-			_p.x-=128*32
-		end
-		_p.f=6
+		_p.dx=0.75
+	else
+		_p.dx=0
 	end
 	_p:update()
 end
