@@ -37,7 +37,7 @@ function person:new(
 		lx=x,
 		ly=y,
 		ann="walk",
-		ant=0,
+		ant=t(),
 		fc=6
 	}
 	return setmetatable(
@@ -60,20 +60,24 @@ function person:update()
 		self.f=6
 	end
 	self.y+=self.dy
-	if t()%0.25==0 then
-		self.ant=(self.ant+1)%4
-	end
 	self.x+=self.dx
-	self.y+=self.dy
+	if self.dx==0 then
+		self.ann="idle"
+	else
+		if self.ann!="walk" then
+			self.ant=t()
+		end
+		self.ann="walk"
+	end
 end
 
 function person:draw()
 	local an=_anims[self.ann]
-	local ani=an[1+self.ant]
+	local ani=an[1+flr(
+		4*(t()-self.ant)
+		)%#an]
 	local fx=self.f==4
-	spr(
-		ani,60,self.y-16,1,2,fx
-		)
+	spr(ani,60,self.y-16,1,2,fx)
 end
 
 function _init()
