@@ -22,7 +22,7 @@ _layers={
 
 _anims={
 	idle={{1},1,false},
-	walk={{0,1,2,1},4,true},
+	walk={{2,1,0,1},4,true},
 	jump={{3},1,false},
 }
 
@@ -61,8 +61,15 @@ function person:update()
 		self.f=6
 	end
 	self.y+=self.dy
+	self.dy+=0.5
+	if self.y>=96 then
+		self.y=96
+		self.dy=0
+	end
 	self.x+=self.dx
-	if self.dx==0 then
+	if self.y<96 then
+		self.ann="jump"
+	elseif self.dx==0 then
 		self.ann="idle"
 	else
 		if self.ann!="walk" then
@@ -102,6 +109,11 @@ function _update()
 		_p.dx=0.75
 	else
 		_p.dx=0
+	end
+	if btnp(❎) or btnp(🅾️) then
+		if _p.y==96 then
+			_p.dy=-6
+		end
 	end
 	_p:update()
 end
