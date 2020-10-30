@@ -10,8 +10,6 @@ _cart="lakeside"
 --cartdata(_me.."_".._cart.."_1")
 --_version=1
 
-person={}
-
 _layers={
 	{ 0,0,16,16,0,0,32.0},
 	{16,0, 2,16,0,0,16.0},
@@ -26,6 +24,8 @@ _anims={
 	jump={{3},1,false},
 	duck={{4},1,false}
 }
+
+person={}
 
 function person:new(
 	x, -- x position : number
@@ -103,9 +103,35 @@ function person:draw()
 	spr(ani,60,self.y-16,1,2,fx)
 end
 
+cam={}
+
+function cam:new(
+	f -- focus
+	)
+	local obj={
+		f=f,      -- focus
+		x=f.x,
+		y=f.y,
+		apron=4, -- apron
+	}
+	return setmetatable(
+		obj,{__index=self}
+	)
+end
+
+function cam:update()
+	local mxx=self.x+self.apron
+	local mnx=self.x-self.apron
+	if mxx<self.f.x then
+		self.x+=min(4,self.f.x-mxx)
+	elseif mnx>self.f.x then
+		self.x+=min(4,self.f.x-mnx)
+	end
+end
+
 function _init()
-	--_cam={x=0,y=0}
 	_p=person:new(64,96)
+	_cam=cam:new(_p)
 end
 
 function _update()
@@ -131,15 +157,16 @@ function _update()
 		end
 	end
 	_p:update()
+	_cam:update()
 end
 
-function drawlayer(l)
+function drawlayer(c,l)
 	local sw=8*l[3]
 	local sh=8*l[4]
 	local sx=l[5]
 	local sy=l[6]
-	sx=(sx-_p.x)/l[7]
-	--sy=(sy+_p.y)/l[7]
+	sx=(sx-c.x)/l[7]
+	--sy=(sy+c.y)/l[7]
 	repeat
 		map(
 			l[1],l[2],sx,sy,l[3],l[4]
@@ -153,16 +180,17 @@ function _draw()
 	camera()
 	for l in all(_layers) do
 		if l[7]>=1 then
-			drawlayer(l)
+			drawlayer(_cam,l)
 		end
 	end
 	_p:draw()
 	for l in all(_layers) do
 		if l[7]<1 then
-			drawlayer(l)
+			drawlayer(_cam,l)
 		end
 	end
-	print(_p.x,0,0,1)
+	print(_cam.x,0,0,1)
+	print(_p.x,0,6,1)
 end
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
