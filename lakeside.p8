@@ -29,6 +29,13 @@ _anims={
 	duck={{4},1,false}
 }
 
+_bbox={
+	idle={2,2,4,14},
+	walk={2,2,4,14},
+	jump={2,2,4,14},
+	duck={2,5,4,11}
+}
+
 person={}
 
 function person:new(
@@ -107,6 +114,15 @@ function person:draw()
 	spr(
 		ani,self.x,self.y-16,1,2,fx
 		)
+	local b=_bbox[self.ann]
+	local lf=self.x+b[1]
+	local tp=self.y-16+b[2]
+	local rt=lf+b[3]
+	local bt=tp+b[4]
+	pset(lf,tp,8)
+	pset(rt,tp,8)
+	pset(lf,bt,8)
+	pset(rt,bt,8)
 end
 
 cam={}
