@@ -65,6 +65,7 @@ function person:new(
 		dk=false,
 		ann="idle",
 		ant=t(),
+		hts={},
 		fc=6
 	}
 	return setmetatable(
@@ -75,7 +76,39 @@ end
 function person:update()
 	self.lx=self.x
 	self.ly=self.y
+	self.dx=mid(-1,self.dx,1)
 	self.x+=self.dx
+	-- todo: side hit check
+	while #self.hts>0 do
+		deli(self.hts,#self.hts)
+	end
+	local b=_bbox[self.ann]
+	local lf=self.x+b[1]
+	local tp=self.y-16+b[2]
+	local rt=lf+b[3]
+	local bt=tp+b[4]
+	for pt in all({
+		{lf,tp},
+		{rt,tp},
+		{lf,bt},
+		{rt,bt},
+		}) do
+			local x=pt[1]
+			local y=pt[2]
+			local h=hit(x,y)
+			add(self.hts,{x,y,h})
+			if hit(x,y) then
+				rect(x-1,y-1,x+1,y+1,8)
+			else
+				pset(pt[1],pt[2],8)
+			end
+	end
+	--[[
+	local ofs=self.wd/3
+	for i=-ofs,ofs,2 do
+		if self.dx
+	end
+	--]]
 	if self.x<_minx then
 		self.x=_minx
 	elseif self.x>=_maxx then
@@ -127,23 +160,14 @@ function person:draw()
 	spr(
 		ani,self.x,self.y-16,1,2,fx
 		)
-	local b=_bbox[self.ann]
-	local lf=self.x+b[1]
-	local tp=self.y-16+b[2]
-	local rt=lf+b[3]
-	local bt=tp+b[4]
-	for pt in all({
-		{lf,tp},
-		{rt,tp},
-		{lf,bt},
-		{rt,bt},
-		}) do
-			local x=pt[1]
-			local y=pt[2]
-			if hit(x,y) then
+	for ht in all(self.hts) do
+			local x=ht[1]
+			local y=ht[2]
+			local h=ht[3]
+			if h then
 				rect(x-1,y-1,x+1,y+1,8)
 			else
-				pset(pt[1],pt[2],8)
+				pset(x,y,8)
 			end
 	end
 end
