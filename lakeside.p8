@@ -5,6 +5,13 @@ __lua__
 -- by sestrenexsis
 -- github.com/sestrenexsis/lakeside
 
+--[[
+based on
+advanced micro platformer
+by @matthughson
+lexaloffle.com/bbs/?tid=28793
+--]]
+
 _me="sestrenexsis"
 _cart="lakeside"
 --cartdata(_me.."_".._cart.."_1")
@@ -49,6 +56,38 @@ function hit(
 	return res
 end
 
+jump={}
+
+function jump:new()
+	local obj={
+		pres=false,
+		down=false,
+		tiks=0,
+		grnd=false
+	}
+	return setmetatable(
+		obj,{__index=self}
+	)
+end
+
+function jump:update(
+	b, -- input  : bool
+	p  -- player : table
+	)
+	self.pres=false
+	if b then
+		if not self.down then
+			self.pres=true
+		end
+		self.down=true
+		self.tiks+=1
+	else
+		self.down=false
+		self.pres=false
+		self.tiks=0
+	end
+end
+
 person={}
 
 function person:new(
@@ -63,7 +102,7 @@ function person:new(
 		lx=x,
 		ly=y,
 		dk=false,
-		gd=false,
+		jp=jump:new(),
 		ann="idle",
 		ant=t(),
 		hts={},
@@ -124,7 +163,7 @@ function person:update()
 	end
 	-- floor/ceiling hit checks
 	local gv=true
-	self.gd=false
+	self.jp.grnd=false
 	for i=0,ceil(abs(self.dy)) do
 		local y=y0
 		if self.dy>0 then
@@ -139,7 +178,7 @@ function person:update()
 		add(self.hts,{x0,y,h0})
 		add(self.hts,{x1,y,h1})
 		if (h0 or h1) and gv then
-			self.gd=true
+			self.jp.grnd=true
 		end
 		if h0 or h1 then
 			if i<2 then
@@ -151,7 +190,7 @@ function person:update()
 		end
 	end
 	self.y+=self.dy
-	if not self.gd then
+	if not self.jp.grnd then
 		self.ann="jump"
 	elseif self.dx==0 then
 		if self.dk then
@@ -195,7 +234,7 @@ function person:draw()
 				pset(x,y,8)
 			end
 	end
-	if self.gd then
+	if self.jmp then
 		local x=self.x+3
 		local y=self.y-9
 		rectfill(x-1,y-1,x+1,y+1,11)
@@ -258,7 +297,7 @@ function _update()
 		end
 	end
 	if btnp(❎) or btnp(🅾️) then
-		if _p.gd then
+		if _p.jp.grnd then
 			_p.dy=-6
 		end
 	end
