@@ -299,6 +299,9 @@ end
 -- game loop
 
 function _init()
+	--disable button repeating
+	poke(0x5f5c,255)
+	poke(0x5f5d,255)
 	_p=person:new(96,96)
 	_cam=cam:new(_p)
 	music(0)
