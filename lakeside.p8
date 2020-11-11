@@ -66,16 +66,53 @@ function jump:new()
 		grnd=false,
 		held=0,
 		airt=0,
-		mxpr=15
+		mxpr=15,
+		-- timers
+		gnd_t=-999, -- ground
+		prs_t=-999, -- btn press
+		-- counters
+		jmp_c=1,      -- jumps left
+		-- flags
+		jmp_f=false,  -- jumping
 	}
 	return setmetatable(
 		obj,{__index=self}
 	)
 end
 
+function jump:update2(
+	prs, -- button press   : bool
+	gnd  -- on ground      : bool
+	)
+	if gnd then
+		self.gnd_t=t()
+		self.jmp_c=0
+	end
+	if prs then
+		self.prs_t=t()
+	else
+		if gnd then
+			self.jmp_c=1
+		end
+	end
+	local dgnd=t()-self.gnd_t
+	local dprs=t()-self.prs_t
+	self.jmp_f=false
+	if self.jmp_c>0 then
+		if (
+			dgnd<=0.2 and
+			dprs<=0.2
+			)
+			then
+			self.jmp_c=0
+			self.jmp_f=true
+		end
+	end
+end
+
 function jump:update(
 	b, -- input  : bool
-	p  -- player : table
+	p  -- person : table
 	)
 	self.pres=false
 	if b then
@@ -129,7 +166,7 @@ function person:new(
 		ann="idle",
 		ant=t(),
 		hts={},
-		fc=6
+		fc=6,
 	}
 	return setmetatable(
 		obj,{__index=self}
@@ -184,7 +221,12 @@ function person:update()
 	elseif self.x>=_maxx then
 		self.x=_maxx
 	end
-	self.jp:update(btn(❎),self)
+	local gnd=self.jp.grnd
+	self.jp:update2(btnp(❎),gnd)
+	if self.jp.jmp_f then
+		self.dy=-6
+	end
+	--self.jp:update(btn(❎),self)
 	-- floor/ceiling hit checks
 	local gv=true
 	self.jp.grnd=false
