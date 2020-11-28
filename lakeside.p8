@@ -19,8 +19,8 @@ _cart="lakeside"
 
 _minx=64
 _maxx=960
-_gnd_b=0.25 -- ground buffer
-_jmp_b=0.2 -- jump buffer
+_gnd_b=0.15 -- ground buffer
+_jmp_b=0.15 -- jump buffer
 
 _layers={
 --{tx,ty,tw,th,ox,oy,sc}
@@ -44,6 +44,24 @@ _bbox={
 	jump={2,2,4,13},
 	duck={2,5,4,10}
 }
+
+-- from https://www.lexaloffle.com/bbs/?pid=44863
+function linedist(
+	ax, -- 1st point on line x
+	ay, -- 1st point on line y
+	bx, -- 2nd point on line x
+	by, -- 2nd point on line y
+	cx, -- test point x
+	cy  -- test point y
+	) -- returns distance as number
+	local dx=bx-ax
+	local dy=by-ay
+	local d=sqrt(dx*dx+dy*dy)
+	local res=abs(
+		dx*(ay-cy)-dy*(ax-cx)
+		)/d
+	return res
+end
 
 function hit(
 	x, -- x position : number
@@ -118,10 +136,7 @@ function person:update()
 	local jmp_d=t()-self.jmp_t
 	local gnd=gnd_d<=_gnd_b
 	local jmp=jmp_d<=_jmp_b
-	local ddy=0
-	if not gnd then
-		ddy=0.5
-	end
+	local ddy=0.5
 	self.dy=mid(-16,self.dy+ddy,16)
 	while #self.hts>0 do
 		deli(self.hts,#self.hts)
