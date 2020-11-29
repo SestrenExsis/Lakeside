@@ -7,15 +7,26 @@ __lua__
 
 --[[
 based on
+
 advanced micro platformer
 by @matthughson
 lexaloffle.com/bbs/?tid=28793
+
+and
+
+shelled shinobi
+by magu aka noppa
+lexaloffle.com/bbs/?tid=38573
+
 --]]
 
 _me="sestrenexsis"
 _cart="lakeside"
 --cartdata(_me.."_".._cart.."_1")
 --_version=1
+
+_fps60=true
+_fps_f=_fps60 and 2 or 1
 
 _minx=64
 _maxx=960
@@ -76,6 +87,55 @@ function hit(
 	return res
 end
 
+function hitmap(o,d,f)
+	local x=o.x
+	local y=o.y+_cam_y
+	local w=o.w
+	local h=o.h
+	local x1=x
+	local x2=x
+	local y1=y
+	local y2=y
+	if d=="left" then
+		x1=x-1
+		y1=y
+		x2=x
+		y2=y+h-1
+	elseif d=="right" then
+		x1=x+w-1
+		y1=y
+		x2=x+w
+		y2=y+h-1
+	elseif d=="up" then
+		x1=x+2
+		y1=y-1
+		x2=x+w-3
+		y2=y
+	elseif d=="down" then
+		x1=x+2
+		y1=y+h
+		x2=x+w-3
+		y2=y+h
+	end
+	--pixels to tiles
+	x1/=8
+	y1/=8
+	x2/=8
+	y2/=8
+	local tiles={
+		{x1,y1},
+		{x1,y2},
+		{x2,y1},
+		{x2,y2},
+		}
+	for t in all(tiles) do
+		local tx,ty=t[1],t[2]
+		if fget(mget(tx,ty),f) then
+			return true
+		end
+	end
+end
+
 person={}
 
 function person:new(
@@ -85,8 +145,18 @@ function person:new(
 	local obj={
 		x=x,
 		y=y,
+		w=8,
+		h=8,
 		dx=0,
 		dy=0,
+		max_dx=_default_max_dx,
+		max_dy=_default_max_dy,
+		acc=.5/_fps_f,
+		boost=_default_boost,
+		jumping=false,
+		falling=false,
+		landed=true,--default true for outline drawing
+		landing=false,
 		lx=x,
 		ly=y,
 		dk=false,
@@ -105,6 +175,16 @@ function person:new(
 	return setmetatable(
 		obj,{__index=self}
 	)
+end
+
+function person:jump(amt)
+	local boost=amt or _default_boost
+	self.dy-=boost
+	self.landed=false
+	_has_jumped=true
+	_grace_left=0
+	_was_landed=false
+	_jump_buffer=0
 end
 
 --[[
@@ -249,7 +329,7 @@ function person:draw()
 		idx=min(#frames,1+idx)
 	end
 	local ani=frames[idx]
-	local fx=self.fc==4
+	local fx=self.flp--self.fc==4
 	spr(
 		ani,self.x,self.y-16,1,2,fx
 		)
@@ -304,6 +384,20 @@ end
 -- game loop
 
 function _init()
+	_cam_x=0
+	_cam_y=0
+	_steps=_fps60 and 4 or 8 -- simulation done in steps per frame
+	_gravity=fps_60 and .11 or .4
+	_default_friction=_fps60 and .925 or 0.85
+	_default_max_dx=2/_fps_f
+	_default_max_dy=_fps60 and 2.35 or 4.5
+	_falling_max_dy=_fps60 and 4 or 8
+	_default_boost=_fps60 and 2.35 or 4.5
+	_grace_max=2.5*_fps_f*_steps
+	_grace_left=_grace_max
+	_was_landed=false
+	_jump_buffer=0
+	_jump_buffer_max=4*_fps_f*_steps
 	--disable button repeating
 	poke(0x5f5c,255)
 	poke(0x5f5d,255)
@@ -313,6 +407,81 @@ function _init()
 end
 
 function _update()
+	-- update physics parameters
+	_p.dx*=_default_friction
+	_p.max_dx=_default_max_dx
+	_p.dy+=_gravity
+	-- handle input
+	if btn(⬅️) then
+		_p.dx+=-1*_p.acc
+		_p.running=true
+		_p.flp=true
+	elseif btn(➡️) then
+		_p.dx+=1*_p.acc
+		_p.running=true
+		_p.flp=false
+	end
+	-- jump logic
+	local jump=btn(❎) and not _jump_input_down
+	_jump_input_down=btn(❎)
+	if jump then
+		_jump_buffer=_jump_buffer_max
+		if _p.landed
+		or (_grace_left>0 and _was_landed) then
+			_p:jump(_p.boost)
+		end
+	elseif _jump_buffer>0 then
+		if _p.landed then
+			_p:jump(_p.boost)
+		end
+	end
+	-- physics simulation
+	for i=1,_steps do
+		_jump_buffer=max(0,_jump_buffer-1)
+		if _p.dy>0 then
+			_p.falling=true
+			_p.landed=false
+			_p.jumping=false
+			if _p.dy>_gravity then
+				_p.landing=true
+			end
+			_p.max_dy=_falling_max_dy
+			if _p.landing
+			and _was_landed
+			and not _p.landed
+			and _grace_left>0 then
+				_grace_left-=1
+			end
+			if hitmap(_p,"down",0) then
+				_p.landed=true
+				_p.falling=false
+				_p.y-=((_p.y+_p.h+1)%8)-1
+				if _p.landed
+				and _p.landing then
+					_p.landing=false
+				end
+				_p.dy=0
+				grace_left=grace_max
+				was_landed=true
+			end
+		elseif _p.dy<0 then
+			_p.max_dy=_default_max_dy
+			_p.jumping=true
+			if hitmap(_p,"up",1) then
+				_p.dy=0
+			end
+		end
+		if _p.dx!=0 then
+			local d=_p.dx<0 and "left" or "right"
+			if hitmap(_p,d,1) then
+				_p.dx=0
+			end
+		end
+		_p.x+=_p.dx/_steps
+		_p.y+=_p.dy/_steps
+		_p.x=max(0,_p.x)
+	end
+	--[[
 	_p.dx=0
 	if btn(⬇️) then
 		_p.dk=true
@@ -332,7 +501,8 @@ function _update()
 	if btnp(❎) then
 		_p.jmp_t=t()
 	end
-	_p:update()
+	--]]
+	--_p:update()
 	_cam:update()
 end
 
