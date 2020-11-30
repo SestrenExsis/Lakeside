@@ -25,7 +25,7 @@ _cart="lakeside"
 --cartdata(_me.."_".._cart.."_1")
 --_version=1
 
-_fps60=true
+_fps60=false
 _fps_f=_fps60 and 2 or 1
 
 _minx=64
@@ -155,7 +155,8 @@ function person:new(
 		boost=_default_boost,
 		jumping=false,
 		falling=false,
-		landed=true,--default true for outline drawing
+		sliding=false,
+		landed=true,
 		landing=false,
 		lx=x,
 		ly=y,
@@ -181,6 +182,7 @@ function person:jump(amt)
 	local boost=amt or _default_boost
 	self.dy-=boost
 	self.landed=false
+	self.sliding=false
 	_has_jumped=true
 	_grace_left=0
 	_was_landed=false
@@ -387,7 +389,7 @@ function _init()
 	_cam_x=0
 	_cam_y=0
 	_steps=_fps60 and 4 or 8 -- simulation done in steps per frame
-	_gravity=fps_60 and .11 or .4
+	_gravity=_fps60 and .11 or .4
 	_default_friction=_fps60 and .925 or 0.85
 	_default_max_dx=2/_fps_f
 	_default_max_dy=_fps60 and 2.35 or 4.5
@@ -421,7 +423,6 @@ function _update()
 		_p.running=true
 		_p.flp=false
 	end
-	-- jump logic
 	local jump=btn(❎) and not _jump_input_down
 	_jump_input_down=btn(❎)
 	if jump then
@@ -477,31 +478,29 @@ function _update()
 				_p.dx=0
 			end
 		end
+		local mxdx=_p.max_dx
+		local mxdy=_p.max_dy
+		_p.dy=mid(-mxdy,_p.dy,mxdy)
+		_p.dx=mid(-mxdx,_p.dx,mxdx)
+		--sliding behavior
+		if not (btn(⬅️) or btn(➡️))
+		and _p.landed then
+			_p.running=false
+			_p.sliding=true
+		end
+		if _p.sliding then
+			if abs(_p.dx)<(.6/_fps_f)
+			and _p.landed
+			or _p.running then
+				_p.running=false
+				_p.sliding=false
+				_p.dx=0
+			end
+		end
 		_p.x+=_p.dx/_steps
 		_p.y+=_p.dy/_steps
 		_p.x=max(0,_p.x)
 	end
-	--[[
-	_p.dx=0
-	if btn(⬇️) then
-		_p.dk=true
-		if btn(⬅️) then
-			_p.fc=4
-		elseif btn(➡️) then
-			_p.fc=6
-		end
-	else
-		_p.dk=false
-		if btn(⬅️) then
-			_p.dx=-2
-		elseif btn(➡️) then
-			_p.dx=2
-		end
-	end
-	if btnp(❎) then
-		_p.jmp_t=t()
-	end
-	--]]
 	--_p:update()
 	_cam:update()
 end
