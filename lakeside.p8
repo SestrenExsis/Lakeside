@@ -25,7 +25,7 @@ _cart="lakeside"
 --cartdata(_me.."_".._cart.."_1")
 --_version=1
 
-_fps60=false
+_fps60=true
 _fps_f=_fps60 and 2 or 1
 
 _minx=64
@@ -35,11 +35,11 @@ _jmp_b=0.15 -- jump buffer
 
 _layers={
 --{tx,ty,tw,th,ox,oy,sc}
-	{ 0,48,16,16,0,0,32.0},
+	--{ 0,48,16,16,0,0,32.0},
 	{16,48, 2,16,0,0,16.0},
 	{18,48, 2,16,0,0,4.0},
-	{20,48, 2,16,0,0,1.0},
-	{22,48, 4,16,0,0,0.8}
+	--{20,48, 2,16,0,0,1.0},
+	--{22,48, 4,16,0,0,0.8}
 }
 
 _anims={
@@ -408,7 +408,7 @@ function _init()
 	music(0)
 end
 
-function _update()
+function _update60()
 	-- update physics parameters
 	_p.dx*=_default_friction
 	_p.max_dx=_default_max_dx
