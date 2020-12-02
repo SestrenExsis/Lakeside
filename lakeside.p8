@@ -25,6 +25,7 @@ _cart="lakeside"
 --cartdata(_me.."_".._cart.."_1")
 --_version=1
 
+_tests={}
 _fps60=true
 _fps_f=_fps60 and 2 or 1
 
@@ -88,49 +89,44 @@ function hit(
 end
 
 function hitmap(o,d,f)
-	local x=o.x
-	local y=o.y+_cam_y
-	local w=o.w
-	local h=o.h
-	local x1=x
-	local x2=x
-	local y1=y
-	local y2=y
+	local lf=o.x
+	local rt=lf+o.w-1
+	local tp=o.y+_cam_y
+	local bt=tp+o.h-1
 	if d=="left" then
-		x1=x-1
-		y1=y
-		x2=x
-		y2=y+h-1
+		rt=lf
+		lf-=1
 	elseif d=="right" then
-		x1=x+w-1
-		y1=y
-		x2=x+w
-		y2=y+h-1
+		lf=rt
+		rt+=1
 	elseif d=="up" then
-		x1=x+2
-		y1=y-1
-		x2=x+w-3
-		y2=y
+		bt=tp
+		tp-=1
+		lf+=2
+		rt-=2
 	elseif d=="down" then
-		x1=x+2
-		y1=y+h
-		x2=x+w-3
-		y2=y+h
+		tp=bt
+		bt+=1
+		lf+=2
+		rt-=2
 	end
 	--pixels to tiles
-	x1/=8
-	y1/=8
-	x2/=8
-	y2/=8
+	lf/=8
+	rt/=8
+	tp/=8
+	bt/=8
 	local tiles={
-		{x1,y1},
-		{x1,y2},
-		{x2,y1},
-		{x2,y2},
+		{lf,tp},
+		{rt,tp},
+		{lf,bt},
+		{rt,bt},
 		}
 	for t in all(tiles) do
 		local tx,ty=t[1],t[2]
-		if fget(mget(tx,ty),f) then
+		local hit=fget(mget(tx,ty),f)
+		add(t,hit)
+		add(_tests,t)
+		if hit then
 			return true
 		end
 	end
@@ -333,7 +329,7 @@ function person:draw()
 	local ani=frames[idx]
 	local fx=self.flp--self.fc==4
 	spr(
-		ani,self.x,self.y-16,1,2,fx
+		ani,self.x,self.y-8,1,2,fx
 		)
 	for ht in all(self.hts) do
 			local x=ht[1]
@@ -409,6 +405,9 @@ function _init()
 end
 
 function _update60()
+	while #_tests>0 do
+		deli(_tests,#_tests)
+	end
 	-- update physics parameters
 	_p.dx*=_default_friction
 	_p.max_dx=_default_max_dx
@@ -531,6 +530,13 @@ function _draw()
 	camera(_cam.x-64,_cam.y)
 	map(0,0,0,0,128,128)
 	_p:draw()
+	for h in all(_tests) do
+		local c=8
+		if h[3] then
+			c=10
+		end
+		pset(8*h[1],8*h[2],c)
+	end
 	camera()
 	for l in all(_layers) do
 		if l[7]<1 then
